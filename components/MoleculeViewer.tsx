@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Maximize, RotateCw, RefreshCw, Camera, Layers, Disc, Palette } from 'lucide-react';
+import { Maximize, RotateCw, RefreshCw, Camera, Layers, Disc, Palette, Plus, Minus, Eye, EyeOff } from 'lucide-react';
 
 // Declare NGL globally as it is loaded via script tag
 declare const NGL: any;
@@ -28,7 +28,11 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
   const [spinning, setSpinning] = useState(false);
   const [bgColor, setBgColor] = useState('#050505');
   const [loadedComponent, setLoadedComponent] = useState<any>(null);
+  
   const [activeOrbital, setActiveOrbital] = useState<'none' | 'homo' | 'lumo'>('none');
+  const [showPositive, setShowPositive] = useState(true);
+  const [showNegative, setShowNegative] = useState(true);
+  
   const [representation, setRepresentation] = useState<RepresentationType>('ball+stick');
 
   const isPreview = variant === 'preview';
@@ -48,7 +52,8 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
     const stage = new NGL.Stage(containerRef.current, { 
         backgroundColor: bgColor,
         quality: 'high',
-        sampleLevel: 1
+        sampleLevel: 1,
+        tooltip: !isPreview // Disable tooltip in preview mode if needed
     });
     stageRef.current = stage;
 
@@ -76,6 +81,7 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
     setLoadedComponent(null);
     setActiveOrbital('none'); // Reset orbital view
     
+    // Clear shapes/orbitals
     if (shapeCompRef.current) {
         stageRef.current.removeComponent(shapeCompRef.current);
         shapeCompRef.current = null;
@@ -95,263 +101,311 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
     setLoading(true);
 
     const cleanStructure = structure.trim();
-    const fileExt = ext ? ext.toLowerCase().trim().replace(/[^a-z0-9]/g, '') : 'xyz';
-
-    let objectUrl: string | null = null;
+    // Use File object to ensure NGL auto-detection works based on filename
+    const fileExt = ext ? ext.toLowerCase().trim() : 'xyz';
+    const fileName = `molecule.${fileExt}`;
 
     try {
-        const blob = new Blob([cleanStructure], { type: 'text/plain' });
-        objectUrl = URL.createObjectURL(blob);
+        const file = new File([cleanStructure], fileName, { type: 'text/plain' });
         
-        const params = { defaultRepresentation: false, ext: fileExt };
+        // Load the file
+        stage.loadFile(file, { defaultRepresentation: false }).then((component: any) => {
+            setLoadedComponent(component);
+            component.autoView();
+            setLoading(false);
+        }).catch((err: any) => {
+            console.error("NGL Load Error:", err);
+            setLoading(false);
+        });
 
-        stage.loadFile(objectUrl, params)
-          .then((component: any) => {
-            if (component) {
-                // We delegate representation adding to the separate effect
-                // This ensures state consistency
-                setLoadedComponent(component);
-                component.autoView();
-            }
+    } catch (e) {
+        console.error("File API Error:", e);
+        // Fallback for environments without File API (unlikely in modern browsers)
+        const blob = new Blob([cleanStructure], { type: 'text/plain' });
+        stage.loadFile(blob, { ext: fileExt, defaultRepresentation: false }).then((component: any) => {
+            setLoadedComponent(component);
+            component.autoView();
             setLoading(false);
-            if(objectUrl) URL.revokeObjectURL(objectUrl);
-          })
-          .catch((e: any) => {
-            console.error("NGL Load Error:", e);
-            setLoading(false);
-            if(objectUrl) URL.revokeObjectURL(objectUrl);
-          });
-    } catch (err) {
-        console.error("Blob creation failed", err);
-        setLoading(false);
-        if(objectUrl) URL.revokeObjectURL(objectUrl);
+        });
     }
 
   }, [structure, ext]);
 
-  // Handle Representations (Style Switching)
+
+  // Handle Representation Switching
   useEffect(() => {
       if (!loadedComponent) return;
 
       loadedComponent.removeAllRepresentations();
 
-      const commonProps = {
-          colorScheme: "element",
-          quality: "high"
-      };
+      const commonProps = { selenium: true, quality: 'high' };
 
-      // Special case for PDB files usually prefer Cartoon, but we obey the toggle for flexibility
-      // If the user wants cartoon, we could add that as an option, but for now stick to small molecule styles
-      
       switch (representation) {
           case 'ball+stick':
-              loadedComponent.addRepresentation("ball+stick", {
+              loadedComponent.addRepresentation('ball+stick', { 
                   ...commonProps,
-                  aspectRatio: 2.2,
-                  radiusScale: 0.8,
-                  bondScale: 0.8
+                  aspectRatio: 2.0,
+                  radiusScale: 2.0,
               });
               break;
           case 'hyperball':
-              loadedComponent.addRepresentation("hyperball", {
+              loadedComponent.addRepresentation('hyperball', {
                   ...commonProps,
-                  radiusScale: 0.7,
-                  shrink: 0.15
+                  scale: 0.3
               });
               break;
           case 'spacefill':
-              loadedComponent.addRepresentation("spacefill", {
+              loadedComponent.addRepresentation('spacefill', {
                   ...commonProps,
-                  radiusScale: 1.0
+                  scale: 1.0
               });
               break;
           case 'licorice':
-              loadedComponent.addRepresentation("licorice", {
+              loadedComponent.addRepresentation('licorice', {
                   ...commonProps,
-                  radiusScale: 0.15
+                  aspectRatio: 2.0,
+                  radiusScale: 2.0,
               });
               break;
-          default:
-              loadedComponent.addRepresentation("ball+stick", commonProps);
+      }
+  }, [loadedComponent, representation]);
+
+
+  // Handle Spin
+  useEffect(() => {
+    if (stageRef.current) {
+      if (spinning) {
+        stageRef.current.setSpin(true);
+      } else {
+        stageRef.current.setSpin(false);
+      }
+    }
+  }, [spinning]);
+
+
+  // Handle Dipole Visualization
+  useEffect(() => {
+      if (!stageRef.current || !dipoleMoment || !loadedComponent) {
+          // Cleanup if dipole removed
+          if (shapeCompRef.current && stageRef.current) {
+              stageRef.current.removeComponent(shapeCompRef.current);
+              shapeCompRef.current = null;
+          }
+          return;
       }
 
-  }, [representation, loadedComponent]);
+      // Cleanup previous
+      if (shapeCompRef.current) {
+          stageRef.current.removeComponent(shapeCompRef.current);
+      }
 
-  // Dipole Moment Visualization
-  useEffect(() => {
-    if (!stageRef.current || !dipoleMoment) return;
-    
-    if (shapeCompRef.current) {
-        stageRef.current.removeComponent(shapeCompRef.current);
-        shapeCompRef.current = null;
-    }
+      // Calculate Center of Molecule
+      const center = loadedComponent.structure.getCenter();
+      
+      const shape = new NGL.Shape('dipole');
+      
+      // Scale arrow length
+      const magnitude = Math.sqrt(dipoleMoment.reduce((a,b) => a + b*b, 0));
+      const scaleFactor = 2.0; 
+      
+      const end = [
+          center.x + dipoleMoment[0] * scaleFactor, 
+          center.y + dipoleMoment[1] * scaleFactor, 
+          center.z + dipoleMoment[2] * scaleFactor
+      ];
 
-    const [dx, dy, dz] = dipoleMoment;
-    const magnitude = Math.sqrt(dx*dx + dy*dy + dz*dz);
-    
-    if (magnitude > 0.01 && loadedComponent) {
-        const shape = new NGL.Shape("dipole");
-        
-        // Calculate center of molecule to use as origin
-        let start = [0, 0, 0];
-        if (loadedComponent.structure) {
-             const center = loadedComponent.structure.getCenter();
-             start = [center.x, center.y, center.z];
-        }
+      shape.addArrow([center.x, center.y, center.z], end, [0, 1, 1], 0.2, "Dipole");
+      shape.addText(end, [0, 1, 1], 1.5, ` ${magnitude.toFixed(2)} D`);
 
-        const end = [start[0] + dx, start[1] + dy, start[2] + dz];
-        const color = [0, 1, 1]; // Cyan
-
-        shape.addArrow(start, end, color, 0.2);
-        shape.addLabel(end, [0, 1, 1], 1.5, `Dipole: ${magnitude.toFixed(2)} D`);
-
-        const shapeComp = stageRef.current.addComponentFromObject(shape);
-        shapeComp.addRepresentation("buffer");
-        shapeCompRef.current = shapeComp;
-    }
+      shapeCompRef.current = stageRef.current.addComponentFromObject(shape);
+      shapeCompRef.current.addRepresentation('buffer');
 
   }, [dipoleMoment, loadedComponent]);
 
-  // Orbital Visualization
+
+  // Handle Orbital Visualization
   useEffect(() => {
-    if (!stageRef.current) return;
+      const stage = stageRef.current;
+      if (!stage || !orbitals || activeOrbital === 'none') {
+          if (orbitalCompRef.current) {
+              stage.removeComponent(orbitalCompRef.current);
+              orbitalCompRef.current = null;
+          }
+          return;
+      }
 
-    // Cleanup previous orbital
-    if (orbitalCompRef.current) {
-        stageRef.current.removeComponent(orbitalCompRef.current);
-        orbitalCompRef.current = null;
-    }
+      const url = activeOrbital === 'homo' ? orbitals.homo : orbitals.lumo;
+      if (!url) return;
 
-    if (activeOrbital === 'none') return;
+      // Avoid reloading if it's the same component (basic check)
+      if (orbitalCompRef.current && orbitalCompRef.current.name === activeOrbital) {
+          // Just update visibility if needed, but for now we reload to be safe or update representation
+          // We'll update representation below
+      } else {
+           if (orbitalCompRef.current) {
+              stage.removeComponent(orbitalCompRef.current);
+          }
 
-    const url = activeOrbital === 'homo' ? orbitals?.homo : orbitals?.lumo;
-
-    if (!url) return;
-
-    setLoading(true);
-
-    stageRef.current.loadFile(url, { ext: 'cube', defaultRepresentation: false })
-        .then((comp: any) => {
-            if (comp) {
-                // Positive Phase (Red)
-                comp.addRepresentation("surface", {
-                    isolevelType: "value",
-                    isolevel: 0.02, 
-                    color: "red",
-                    opacity: 0.6,
-                    side: "front",
-                    quality: "high"
-                });
-                // Negative Phase (Blue)
-                comp.addRepresentation("surface", {
-                    isolevelType: "value",
-                    isolevel: -0.02,
-                    color: "blue",
-                    opacity: 0.6,
-                    side: "front",
-                    quality: "high"
-                });
-                
+          setLoading(true);
+          stage.loadFile(url, { name: activeOrbital, defaultRepresentation: false })
+            .then((comp: any) => {
                 orbitalCompRef.current = comp;
-            }
-            setLoading(false);
-        })
-        .catch((err: any) => {
-            console.error("Orbital Load Error (Mock URLs will fail):", err);
-            setLoading(false);
-        });
+                setLoading(false);
+            })
+            .catch((e: any) => {
+                console.error("Failed to load orbital cube:", e);
+                setLoading(false);
+            });
+      }
 
   }, [activeOrbital, orbitals]);
 
-  const toggleSpin = () => {
-      if(stageRef.current) {
-          const newSpin = !spinning;
-          setSpinning(newSpin);
-          stageRef.current.setSpin(newSpin);
+  // Update Orbital Representations (Phases)
+  useEffect(() => {
+      if (orbitalCompRef.current) {
+          orbitalCompRef.current.removeAllRepresentations();
+          
+          if (showPositive) {
+              orbitalCompRef.current.addRepresentation('surface', {
+                  isolevelType: 'value',
+                  isolevel: 0.02,
+                  color: 'red',
+                  opacity: 0.5,
+                  side: 'front',
+                  quality: 'high'
+              });
+          }
+          
+          if (showNegative) {
+              orbitalCompRef.current.addRepresentation('surface', {
+                  isolevelType: 'value',
+                  isolevel: -0.02,
+                  color: 'blue',
+                  opacity: 0.5,
+                  side: 'front',
+                  quality: 'high'
+              });
+          }
       }
-  };
+  }, [showPositive, showNegative, activeOrbital, loading]);
 
-  const resetView = () => {
-      if(stageRef.current) {
-          stageRef.current.autoView(1000);
-      }
-  };
 
-  const toggleTheme = () => {
-      setBgColor(prev => prev === '#050505' ? '#111827' : '#050505');
-  };
-
-  const cycleRepresentation = () => {
+  const toggleRepresentation = () => {
       const modes: RepresentationType[] = ['ball+stick', 'hyperball', 'spacefill', 'licorice'];
-      const currentIdx = modes.indexOf(representation);
-      const nextIdx = (currentIdx + 1) % modes.length;
-      setRepresentation(modes[nextIdx]);
+      const nextIndex = (modes.indexOf(representation) + 1) % modes.length;
+      setRepresentation(modes[nextIndex]);
   };
-
-  const containerClasses = isPreview 
-    ? "w-full h-48 rounded-xl overflow-hidden glass-panel relative border border-white/10"
-    : "w-full min-h-[500px] h-full rounded-2xl overflow-hidden glass-panel relative shadow-2xl flex flex-col group border border-white/10 transition-all duration-500 hover:border-cyan-500/30 hover:shadow-[0_0_40px_rgba(6,182,212,0.15)]";
 
   return (
-    <div className={containerClasses}>
-        
-        {!isPreview && (
-            <div className="absolute top-4 left-4 z-10 flex items-center gap-3">
-                <div className="px-3 py-1 bg-black/60 backdrop-blur-md rounded-full text-[10px] text-cyan-400 uppercase font-bold tracking-widest border border-cyan-500/20 shadow-lg flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></div>
-                    Interactive View
-                </div>
-                {loading && <span className="text-xs text-slate-400 animate-pulse">Rendering...</span>}
+    <div 
+        className={`relative rounded-2xl overflow-hidden border border-white/10 group transition-all duration-500 ${isPreview ? 'h-48' : 'h-[500px] hover:border-cyan-500/30 hover:shadow-[0_0_40px_rgba(6,182,212,0.15)]'}`}
+        ref={containerRef}
+    >
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-20">
+          <div className="flex flex-col items-center gap-3">
+             <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+             <span className="text-xs font-bold text-cyan-400 tracking-wider">RENDERING</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Interactive Badge */}
+      {!isPreview && (
+        <div className="absolute top-4 left-4 z-10 flex gap-2">
+            <div className="px-2 py-1 bg-black/60 backdrop-blur-md border border-white/10 rounded text-[10px] font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Move3dIcon className="w-3 h-3" />
+                Interactive View
             </div>
-        )}
+        </div>
+      )}
 
-        <div ref={containerRef} className="w-full flex-1 cursor-grab active:cursor-grabbing" />
+      {/* Control Toolbar */}
+      {!isPreview && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 p-1.5 bg-black/80 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl transition-all opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0">
+            
+            <TooltipButton label="Spin" onClick={() => setSpinning(!spinning)} active={spinning}>
+                <RotateCw className="w-4 h-4" />
+            </TooltipButton>
+            
+            <TooltipButton label="Reset View" onClick={() => loadedComponent?.autoView()}>
+                <Maximize className="w-4 h-4" />
+            </TooltipButton>
 
-        {!isPreview && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-2 py-2 bg-black/80 backdrop-blur-xl rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all duration-300 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100">
-                <ControlButton onClick={toggleSpin} icon={<RotateCw className={`w-4 h-4 ${spinning ? 'animate-spin' : ''}`} />} tooltip="Spin" active={spinning} />
-                <ControlButton onClick={resetView} icon={<RefreshCw className="w-4 h-4" />} tooltip="Reset View" />
-                <div className="w-px h-4 bg-white/10 mx-1"></div>
-                <ControlButton onClick={toggleTheme} icon={<Layers className="w-4 h-4" />} tooltip="Toggle BG" />
-                <ControlButton onClick={cycleRepresentation} icon={<Palette className="w-4 h-4" />} tooltip={`Style: ${representation}`} active={representation !== 'ball+stick'} />
-                <ControlButton onClick={() => alert("Screenshot captured!")} icon={<Camera className="w-4 h-4" />} tooltip="Screenshot" />
-                
-                {/* Orbital Controls */}
-                {(orbitals?.homo || orbitals?.lumo) && (
-                    <>
-                        <div className="w-px h-4 bg-white/10 mx-1"></div>
-                        <ControlButton 
-                            onClick={() => setActiveOrbital(prev => prev === 'homo' ? 'none' : 'homo')} 
-                            icon={<span className="font-bold text-[10px]">HOMO</span>} 
-                            tooltip="Toggle HOMO" 
-                            active={activeOrbital === 'homo'}
-                        />
-                        <ControlButton 
-                            onClick={() => setActiveOrbital(prev => prev === 'lumo' ? 'none' : 'lumo')} 
-                            icon={<span className="font-bold text-[10px]">LUMO</span>} 
-                            tooltip="Toggle LUMO" 
-                            active={activeOrbital === 'lumo'}
-                        />
-                    </>
-                )}
-            </div>
-        )}
+            <TooltipButton label="Screenshot" onClick={() => stageRef.current?.makeImage().then((blob: Blob) => {
+                 const link = document.createElement('a');
+                 link.href = URL.createObjectURL(blob);
+                 link.download = `structure_view.png`;
+                 link.click();
+            })}>
+                <Camera className="w-4 h-4" />
+            </TooltipButton>
+
+            <div className="w-px h-4 bg-white/10 mx-1"></div>
+
+            <TooltipButton label={`Style: ${representation}`} onClick={toggleRepresentation}>
+                <Palette className="w-4 h-4 text-emerald-400" />
+            </TooltipButton>
+            
+            <TooltipButton label="Theme" onClick={() => setBgColor(bgColor === '#050505' ? '#0f172a' : '#050505')}>
+                <Disc className="w-4 h-4 text-purple-400" />
+            </TooltipButton>
+
+            {orbitals && (
+                <>
+                    <div className="w-px h-4 bg-white/10 mx-1"></div>
+                    <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5 border border-white/5">
+                        <button 
+                            onClick={() => setActiveOrbital(activeOrbital === 'homo' ? 'none' : 'homo')}
+                            className={`px-2 py-1 rounded text-[10px] font-bold transition-colors ${activeOrbital === 'homo' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                        >
+                            HOMO
+                        </button>
+                        <button 
+                             onClick={() => setActiveOrbital(activeOrbital === 'lumo' ? 'none' : 'lumo')}
+                             className={`px-2 py-1 rounded text-[10px] font-bold transition-colors ${activeOrbital === 'lumo' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                        >
+                            LUMO
+                        </button>
+
+                        {activeOrbital !== 'none' && (
+                             <div className="flex items-center gap-0.5 ml-1 pl-1 border-l border-white/10">
+                                <button onClick={() => setShowPositive(!showPositive)} className={`p-0.5 rounded ${showPositive ? 'text-red-400' : 'text-slate-600'}`} title="Toggle Positive Phase">
+                                    {showPositive ? <Plus className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                                </button>
+                                <button onClick={() => setShowNegative(!showNegative)} className={`p-0.5 rounded ${showNegative ? 'text-blue-400' : 'text-slate-600'}`} title="Toggle Negative Phase">
+                                    {showNegative ? <Plus className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                                </button>
+                             </div>
+                        )}
+                    </div>
+                </>
+            )}
+          </div>
+      )}
     </div>
   );
 };
 
-const ControlButton = ({ onClick, icon, tooltip, active = false }: any) => (
-    <button 
+// Helper for toolbar buttons
+const TooltipButton = ({ children, onClick, active, label }: any) => (
+    <button
         onClick={onClick}
-        title={tooltip}
-        className={`p-2 rounded-xl transition-all duration-200 ${
-            active 
-            ? 'bg-cyan-500 text-black shadow-[0_0_10px_rgba(6,182,212,0.5)] font-bold' 
-            : 'text-slate-400 hover:text-white hover:bg-white/10'
-        }`}
+        title={label}
+        className={`p-2 rounded-lg transition-all ${active ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
     >
-        {icon}
+        {children}
     </button>
+);
+
+// Simple icon for the badge
+const Move3dIcon = ({ className }: { className: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M12 3L20 7.5V16.5L12 21L4 16.5V7.5L12 3Z" />
+        <path d="M12 12L12 21" />
+        <path d="M12 12L20 7.5" />
+        <path d="M12 12L4 7.5" />
+    </svg>
 );
 
 export default MoleculeViewer;

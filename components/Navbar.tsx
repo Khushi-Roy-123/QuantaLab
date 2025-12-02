@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Beaker, Github, Menu, X } from 'lucide-react';
@@ -42,7 +43,7 @@ const Navbar: React.FC = () => {
                 Documentation
               </Link>
               <a 
-                href="https://github.com" 
+                href="https://github.com/Khushi-Roy-123/QuantaLab" 
                 target="_blank" 
                 rel="noreferrer" 
                 className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all text-xs font-medium border border-white/10"
@@ -69,6 +70,14 @@ const Navbar: React.FC = () => {
             <Link to="/" className="block px-3 py-2 rounded-md text-base font-medium text-white hover:bg-white/10">Home</Link>
             <Link to="/simulator" className="block px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:text-white hover:bg-white/10">Simulator</Link>
             <Link to="/docs" className="block px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:text-white hover:bg-white/10">Documentation</Link>
+            <a 
+                href="https://github.com/Khushi-Roy-123/QuantaLab" 
+                target="_blank" 
+                rel="noreferrer" 
+                className="block px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:text-white hover:bg-white/10"
+            >
+                GitHub Repo
+            </a>
           </div>
         </div>
       )}

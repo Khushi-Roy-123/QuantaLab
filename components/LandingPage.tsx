@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Cpu, Layers, BrainCircuit, Atom, Play, FileJson, CheckCircle2, ChevronRight, Microscope, GraduationCap, Github, Twitter, Linkedin, Mail } from 'lucide-react';
@@ -288,7 +289,7 @@ const LandingPage: React.FC = () => {
                           Accelerating chemical discovery through accessible, high-performance web simulation tools.
                       </p>
                       <div className="flex items-center gap-4">
-                          <a href="#" className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-white/10 hover:text-white transition-colors border border-white/5">
+                          <a href="https://github.com/Khushi-Roy-123/QuantaLab" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-white/10 hover:text-white transition-colors border border-white/5">
                               <Github className="w-4 h-4" />
                           </a>
                           <a href="#" className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-white/10 hover:text-cyan-400 transition-colors border border-white/5">
