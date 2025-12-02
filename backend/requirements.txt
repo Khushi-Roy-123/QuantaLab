@@ -1,0 +1,9 @@
+fastapi==0.100.0
+uvicorn==0.23.0
+pydantic==2.0.0
+# Note: Psi4 and RDKit are best installed via Conda, not Pip alone
+# but we list them here for reference
+rdkit-pypi
+numpy
+celery
+redis

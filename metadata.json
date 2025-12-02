@@ -1,0 +1,5 @@
+{
+  "name": "QuantaLab",
+  "description": "A full-stack quantum chemistry simulator using React, FastAPI, Psi4, and RDKit. Features geometry optimization, orbital visualization, and AI-powered result interpretation.",
+  "requestFramePermissions": []
+}
