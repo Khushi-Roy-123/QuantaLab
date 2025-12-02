@@ -1,5 +1,6 @@
+
 import { Job, MoleculeData, CalculationOptions, SimulationResults } from '../types';
-import { API_BASE_URL, MOCK_RESULTS } from '../constants';
+import { API_BASE_URL, MOCK_RESULTS, MOLECULE_STRUCTURES } from '../constants';
 
 // Simple mock store for demo purposes when backend isn't running
 let mockJobs: Job[] = [];
@@ -24,11 +25,11 @@ export const submitJob = async (
     return await response.json();
   } catch (error: any) {
     // Only fall back to mock if it looks like a network connection error (backend not running)
-    // If it's a specific API error (400/500), we want to show that to the user.
     const isNetworkError = error.name === 'TypeError' || error.message.includes('Failed to fetch') || error.message.includes('NetworkError');
 
     if (isNetworkError) {
       console.warn("Backend unreachable (Network Error). Switching to Demo Mode with mock data.");
+      
       const newJob: Job = {
         id: `mock_${Date.now()}`,
         status: 'pending',
@@ -38,6 +39,13 @@ export const submitJob = async (
         basisSet: options.basis,
         createdAt: new Date().toISOString(),
       };
+      
+      // Pass the uploaded structure if available
+      if (molecule.structure) {
+          newJob.structure = molecule.structure;
+          newJob.format = molecule.format;
+      }
+      
       mockJobs.push(newJob);
       
       // Simulate processing time
@@ -45,13 +53,24 @@ export const submitJob = async (
           const j = mockJobs.find(x => x.id === newJob.id);
           if(j) {
               j.status = 'completed';
-              j.results = MOCK_RESULTS;
+              
+              // Select appropriate structure for the viewer
+              let resultStructure = MOLECULE_STRUCTURES[j.moleculeName] || MOLECULE_STRUCTURES['Methane'];
+              
+              // If user uploaded a file, keep that structure
+              if (j.structure) {
+                  resultStructure = j.structure;
+              }
+
+              j.results = {
+                  ...MOCK_RESULTS,
+                  optimizedStructure: resultStructure
+              };
           }
-      }, 4000);
+      }, 2500); // 2.5s simulated delay
       
       return newJob;
     } else {
-      // Re-throw actual API errors (e.g. Validation Error, Internal Server Error)
       throw error;
     }
   }
@@ -68,11 +87,10 @@ export const getJobStatus = async (jobId: string): Promise<Job> => {
     
     return await response.json();
   } catch (error: any) {
-    // Fallback to mock store only on network error
     const isNetworkError = error.name === 'TypeError' || error.message.includes('Failed to fetch');
 
     if (isNetworkError) {
-        console.warn("Backend unreachable during polling. Checking mock store.");
+        // console.warn("Backend unreachable during polling. Checking mock store.");
         const job = mockJobs.find((j) => j.id === jobId);
         if (!job) throw new Error('Job not found in local demo store');
         return job;
@@ -83,6 +101,5 @@ export const getJobStatus = async (jobId: string): Promise<Job> => {
 };
 
 export const downloadReport = (jobId: string) => {
-    // Direct link trigger
     window.open(`${API_BASE_URL}/download/${jobId}`, '_blank');
 };

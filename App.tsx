@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, useLocation, Link } from 'react-router-dom';
 import Navbar from './components/Navbar';
@@ -9,15 +10,7 @@ import DocumentationPage from './components/DocumentationPage';
 import { Job, MoleculeData, CalculationOptions } from './types';
 import { submitJob, getJobStatus } from './services/api';
 import { Home, ChevronRight, Activity, Clock, AlertTriangle, XCircle, History, FileText } from 'lucide-react';
-import { MOCK_RESULTS } from './constants';
-
-const METHANE_XYZ = `5
-Methane
-C     0.000000    0.000000    0.000000
-H     0.629118    0.629118    0.629118
-H    -0.629118   -0.629118    0.629118
-H     0.629118   -0.629118   -0.629118
-H    -0.629118    0.629118   -0.629118`;
+import { MOLECULE_STRUCTURES } from './constants';
 
 const SimulatorPage: React.FC = () => {
   const [currentJob, setCurrentJob] = useState<Job | null>(null);
@@ -26,9 +19,9 @@ const SimulatorPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [jobHistory, setJobHistory] = useState<Job[]>([]);
 
-  // Viewer State
+  // Default to Methane, explicit check
   const [viewerData, setViewerData] = useState<{structure: string, ext: string}>({
-      structure: METHANE_XYZ.trim(),
+      structure: MOLECULE_STRUCTURES['Methane'] || '',
       ext: 'xyz'
   });
 
@@ -39,7 +32,6 @@ const SimulatorPage: React.FC = () => {
         try {
           const updatedJob = await getJobStatus(currentJob.id);
           
-          // Avoid state thrashing if nothing changed
           if (JSON.stringify(updatedJob) !== JSON.stringify(currentJob)) {
              setCurrentJob(updatedJob);
           }
@@ -48,17 +40,23 @@ const SimulatorPage: React.FC = () => {
             setPolling(false);
             setLoading(false);
             
-            // Add to history if not exists
             setJobHistory(prev => {
                 if (prev.find(j => j.id === updatedJob.id)) return prev;
                 return [updatedJob, ...prev];
             });
 
-            // If optimization job returned a new structure, update viewer
+            // Priority 1: Optimization result
+            // Priority 2: Original input structure (if file)
+            // Priority 3: Keep current (if SMILES only and no result)
             if (updatedJob.results?.optimizedStructure) {
                  setViewerData({
                      structure: updatedJob.results.optimizedStructure,
                      ext: 'xyz'
+                 });
+            } else if (updatedJob.structure && updatedJob.format) {
+                 setViewerData({
+                     structure: updatedJob.structure,
+                     ext: updatedJob.format
                  });
             }
           } else if (updatedJob.status === 'failed') {
@@ -69,7 +67,6 @@ const SimulatorPage: React.FC = () => {
         } catch (e: any) {
           console.error("Polling error", e);
           if (!e.message.includes('fetch')) {
-             // Stop polling on non-network errors
              setPolling(false);
              setLoading(false);
              setError(e.message);
@@ -85,7 +82,7 @@ const SimulatorPage: React.FC = () => {
     setError(null);
     setCurrentJob(null);
     
-    // Update viewer if a file structure was provided directly
+    // Immediate feedback if it's a file upload
     if (mol.structure && mol.format) {
         setViewerData({
             structure: mol.structure,
@@ -110,17 +107,12 @@ const SimulatorPage: React.FC = () => {
           setViewerData({ structure: job.results.optimizedStructure, ext: 'xyz' });
       } else if (job.structure && job.format) {
           setViewerData({ structure: job.structure, ext: job.format });
-      } else if (job.smiles) {
-          // If only SMILES, we might not have a structure to view unless we generated one
-          // This is a simplified fallback
-          console.warn("Loading job without structure data");
       }
   };
 
   return (
     <div className="container mx-auto px-4 py-8 pt-24 min-h-screen">
       
-      {/* Header & Breadcrumbs */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 animate-fade-in-up">
         <div>
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-2 font-medium">
@@ -165,7 +157,6 @@ const SimulatorPage: React.FC = () => {
         )}
       </div>
 
-      {/* Error Banner */}
       {error && (
         <div className="mb-8 bg-red-500/10 border border-red-500/20 text-red-200 p-4 rounded-xl flex items-start justify-between animate-fade-in shadow-lg shadow-red-900/10 backdrop-blur-md">
             <div className="flex items-start gap-3">
@@ -182,11 +173,9 @@ const SimulatorPage: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Panel: Inputs (Sticky) */}
         <div className="lg:col-span-4 flex flex-col gap-6 lg:sticky lg:top-24">
           <InputForm onSubmit={handleJobSubmit} isLoading={loading && !currentJob} />
           
-          {/* Job History / Status Mini-card */}
           <div className="glass-panel p-4 rounded-xl space-y-4 animate-fade-in border border-white/5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-white font-medium">
@@ -224,10 +213,8 @@ const SimulatorPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Panel: Visualization & Results */}
         <div className="lg:col-span-8 flex flex-col gap-8">
           
-          {/* Viewer Section */}
           <div className="flex flex-col gap-4">
              <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -244,10 +231,13 @@ const SimulatorPage: React.FC = () => {
                 structure={viewerData.structure} 
                 ext={viewerData.ext} 
                 dipoleMoment={currentJob?.results?.dipoleMoment}
+                orbitals={currentJob?.results ? {
+                    homo: currentJob.results.homoCubeUrl,
+                    lumo: currentJob.results.lumoCubeUrl
+                } : undefined}
              />
           </div>
 
-          {/* Results Section */}
           {currentJob?.status === 'completed' && (
             <div className="animate-fade-in-up">
                 <div className="flex items-center gap-2 mb-4">

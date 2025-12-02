@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { Job } from '../types';
 import { analyzeResultsWithGemini } from '../services/geminiService';
-import { Activity, Download, Zap, BrainCircuit, FileText } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { Activity, Download, Zap, BrainCircuit, FileText, Layers, ExternalLink } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
 
 interface ResultsDashboardProps {
   job: Job;
@@ -27,6 +28,9 @@ const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ job }) => {
     { name: 'LUMO', energy: results.lumoEnergy },
   ];
 
+  // Helper to convert Hartree to eV (1 Ha = 27.2114 eV)
+  const toEV = (ha: number) => (ha * 27.2114).toFixed(2);
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Responsive Grid: 1 col on mobile, 2 on tablet, 3 on desktop */}
@@ -45,7 +49,10 @@ const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ job }) => {
             <Activity className="w-4 h-4 text-emerald-400" />
             <span className="text-xs font-medium uppercase tracking-wider">HOMO-LUMO Gap</span>
           </div>
-          <div className="text-2xl font-bold text-emerald-400 tracking-tight">{results.gap.toFixed(4)} <span className="text-sm font-normal text-slate-500">Ha</span></div>
+          <div className="flex items-baseline gap-2">
+             <div className="text-2xl font-bold text-emerald-400 tracking-tight">{results.gap.toFixed(4)} <span className="text-sm font-normal text-slate-500">Ha</span></div>
+             <div className="text-sm text-slate-500">({toEV(results.gap)} eV)</div>
+          </div>
         </div>
 
         <div className="glass-panel p-5 rounded-xl sm:col-span-2 lg:col-span-1">
@@ -61,25 +68,84 @@ const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ job }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Orbital Diagram */}
-        <div className="glass-panel p-6 rounded-xl">
-            <h3 className="text-lg font-semibold text-white mb-6">Molecular Orbitals</h3>
-            <div className="h-64 sm:h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={orbitalData} barSize={60}>
-                        <XAxis dataKey="name" stroke="#64748b" tick={{fill: '#94a3b8'}} tickLine={{stroke: '#334155'}} axisLine={{stroke: '#334155'}} />
-                        <YAxis stroke="#64748b" tick={{fill: '#94a3b8'}} tickLine={{stroke: '#334155'}} axisLine={{stroke: '#334155'}} label={{ value: 'Energy (Ha)', angle: -90, position: 'insideLeft', fill: '#64748b' }} />
-                        <Tooltip 
-                            contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
-                            itemStyle={{ color: '#fff' }}
-                            cursor={{fill: 'rgba(255,255,255,0.05)'}}
-                        />
-                        <Bar dataKey="energy">
-                            {orbitalData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.name === 'HOMO' ? '#0ea5e9' : '#f43f5e'} />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
+        <div className="glass-panel p-6 rounded-xl flex flex-col">
+            <div className="flex justify-between items-start mb-6">
+                <h3 className="text-lg font-semibold text-white">Molecular Orbitals</h3>
+                <div className="text-xs text-slate-400 text-right">
+                    <div>Frontier Orbitals Analysis</div>
+                    <div>Theory: {job.theory}/{job.basisSet}</div>
+                </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-6 h-full">
+                {/* Chart */}
+                <div className="h-64 sm:h-auto flex-1 w-full min-h-[200px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={orbitalData} barSize={40} margin={{top: 20, right: 30, left: 0, bottom: 5}}>
+                            <XAxis dataKey="name" stroke="#64748b" tick={{fill: '#94a3b8'}} tickLine={{stroke: '#334155'}} axisLine={{stroke: '#334155'}} />
+                            <YAxis stroke="#64748b" tick={{fill: '#94a3b8'}} tickLine={{stroke: '#334155'}} axisLine={{stroke: '#334155'}} label={{ value: 'Energy (Ha)', angle: -90, position: 'insideLeft', fill: '#64748b', offset: 10 }} />
+                            <Tooltip 
+                                contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
+                                itemStyle={{ color: '#fff' }}
+                                cursor={{fill: 'rgba(255,255,255,0.05)'}}
+                                formatter={(value: number) => [value.toFixed(4) + ' Ha', 'Energy']}
+                            />
+                            <ReferenceLine y={0} stroke="#475569" strokeDasharray="3 3" />
+                            <Bar dataKey="energy">
+                                {orbitalData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.name === 'HOMO' ? '#0ea5e9' : '#f43f5e'} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+
+                {/* Values & Downloads */}
+                <div className="sm:w-48 flex flex-col justify-center gap-4">
+                     <div className="p-3 bg-white/5 rounded-lg border border-white/5">
+                        <div className="text-xs font-bold text-slate-500 uppercase mb-1">LUMO</div>
+                        <div className="text-lg font-bold text-rose-400">{results.lumoEnergy.toFixed(4)} Ha</div>
+                        <div className="text-xs text-slate-400">{toEV(results.lumoEnergy)} eV</div>
+                        
+                        {results.lumoCubeUrl && (
+                             <a 
+                                href={results.lumoCubeUrl}
+                                download
+                                onClick={(e) => { 
+                                  if(results.lumoCubeUrl?.startsWith('/mock')) { 
+                                    e.preventDefault(); 
+                                    alert("Demo Mode: This would download the LUMO cube file in a production environment."); 
+                                  }
+                                }}
+                                className="mt-2 flex items-center gap-1.5 text-[10px] text-rose-300 hover:text-white transition-colors cursor-pointer"
+                             >
+                                 <Download className="w-3 h-3" /> Cube File
+                             </a>
+                        )}
+                     </div>
+
+                     <div className="p-3 bg-white/5 rounded-lg border border-white/5">
+                        <div className="text-xs font-bold text-slate-500 uppercase mb-1">HOMO</div>
+                        <div className="text-lg font-bold text-cyan-400">{results.homoEnergy.toFixed(4)} Ha</div>
+                        <div className="text-xs text-slate-400">{toEV(results.homoEnergy)} eV</div>
+
+                        {results.homoCubeUrl && (
+                             <a 
+                                href={results.homoCubeUrl}
+                                download
+                                onClick={(e) => { 
+                                  if(results.homoCubeUrl?.startsWith('/mock')) { 
+                                    e.preventDefault(); 
+                                    alert("Demo Mode: This would download the HOMO cube file in a production environment."); 
+                                  }
+                                }}
+                                className="mt-2 flex items-center gap-1.5 text-[10px] text-cyan-300 hover:text-white transition-colors cursor-pointer"
+                             >
+                                 <Download className="w-3 h-3" /> Cube File
+                             </a>
+                        )}
+                     </div>
+                </div>
             </div>
         </div>
 

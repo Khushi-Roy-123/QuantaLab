@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import { THEORIES, BASIS_SETS, PRESET_MOLECULES } from '../constants';
 import { MoleculeData, CalculationOptions } from '../types';
 import { Atom, Play, UploadCloud, FileText, X, Zap, Move3d, Waves, Settings2, ChevronDown, ChevronUp, FlaskConical } from 'lucide-react';
+import MoleculeViewer from './MoleculeViewer';
 
 interface InputFormProps {
   onSubmit: (mol: MoleculeData, opts: CalculationOptions) => void;
@@ -205,23 +206,38 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => {
                         />
                     </div>
                 ) : (
-                    <div className="w-full p-3 bg-gradient-to-r from-cyan-500/10 to-transparent border border-cyan-500/20 rounded-xl flex items-center justify-between group">
-                        <div className="flex items-center gap-3 overflow-hidden">
-                            <div className="p-2 bg-cyan-500/20 rounded-lg flex-shrink-0">
-                                <FileText className="w-4 h-4 text-cyan-400" />
+                    <div className="space-y-4">
+                        <div className="w-full p-3 bg-gradient-to-r from-cyan-500/10 to-transparent border border-cyan-500/20 rounded-xl flex items-center justify-between group">
+                            <div className="flex items-center gap-3 overflow-hidden">
+                                <div className="p-2 bg-cyan-500/20 rounded-lg flex-shrink-0">
+                                    <FileText className="w-4 h-4 text-cyan-400" />
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                    <span className="text-sm text-white truncate font-medium">{uploadedFile.name}</span>
+                                    <span className="text-[10px] text-cyan-300/70 uppercase font-bold tracking-wider">{uploadedFile.ext} File</span>
+                                </div>
                             </div>
-                            <div className="flex flex-col min-w-0">
-                                <span className="text-sm text-white truncate font-medium">{uploadedFile.name}</span>
-                                <span className="text-[10px] text-cyan-300/70 uppercase font-bold tracking-wider">{uploadedFile.ext} File</span>
-                            </div>
+                            <button 
+                                type="button" 
+                                onClick={clearFile}
+                                className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-slate-400 hover:text-red-400"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
                         </div>
-                        <button 
-                            type="button" 
-                            onClick={clearFile}
-                            className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-slate-400 hover:text-red-400"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
+                        
+                        {/* File Preview */}
+                        <div className="animate-fade-in">
+                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                Structure Preview
+                            </div>
+                            <MoleculeViewer 
+                                structure={uploadedFile.content} 
+                                ext={uploadedFile.ext} 
+                                variant="preview"
+                            />
+                        </div>
                     </div>
                 )}
             </div>

@@ -21,6 +21,8 @@ export interface SimulationResults {
   gap: number;
   frequencies?: number[];
   orbitalsUrl?: string;
+  homoCubeUrl?: string; // Link to HOMO cube file
+  lumoCubeUrl?: string; // Link to LUMO cube file
   outputLog?: string;
   optimizedStructure?: string; // XYZ string of the optimized geometry
   intensities?: number[];
