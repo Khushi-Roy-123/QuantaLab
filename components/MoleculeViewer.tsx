@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Maximize, RotateCw, RefreshCw, Camera, Layers, Disc, Palette, Plus, Minus, Eye, EyeOff } from 'lucide-react';
+import { Maximize, RotateCw, RefreshCw, Camera, Layers, Disc, Palette, Plus, Minus, Eye, EyeOff, Settings2 } from 'lucide-react';
 
 // Declare NGL globally as it is loaded via script tag
 declare const NGL: any;
@@ -16,7 +16,7 @@ interface MoleculeViewerProps {
   variant?: 'default' | 'preview';
 }
 
-type RepresentationType = 'ball+stick' | 'hyperball' | 'spacefill' | 'licorice';
+type RepresentationType = 'ball+stick' | 'hyperball' | 'spacefill' | 'licorice' | 'line' | 'cartoon';
 
 const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleMoment, orbitals, variant = 'default' }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -33,7 +33,11 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
   const [showPositive, setShowPositive] = useState(true);
   const [showNegative, setShowNegative] = useState(true);
   
+  // Visualization Settings
   const [representation, setRepresentation] = useState<RepresentationType>('ball+stick');
+  const [atomSize, setAtomSize] = useState(1.0);
+  const [bondThickness, setBondThickness] = useState(1.0);
+  const [showControls, setShowControls] = useState(false);
 
   const isPreview = variant === 'preview';
 
@@ -132,7 +136,7 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
   }, [structure, ext]);
 
 
-  // Handle Representation Switching
+  // Handle Representation Switching and Scaling
   useEffect(() => {
       if (!loadedComponent) return;
 
@@ -144,31 +148,57 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
           case 'ball+stick':
               loadedComponent.addRepresentation('ball+stick', { 
                   ...commonProps,
-                  aspectRatio: 2.0,
-                  radiusScale: 2.0,
+                  aspectRatio: 2.0 * bondThickness,
+                  radiusScale: 2.0 * atomSize,
               });
               break;
           case 'hyperball':
               loadedComponent.addRepresentation('hyperball', {
                   ...commonProps,
-                  scale: 0.3
+                  scale: 0.3 * atomSize,
+                  shrink: 0.3 * bondThickness // approximate connection scaling
               });
               break;
           case 'spacefill':
               loadedComponent.addRepresentation('spacefill', {
                   ...commonProps,
-                  scale: 1.0
+                  scale: 1.0 * atomSize
               });
               break;
           case 'licorice':
               loadedComponent.addRepresentation('licorice', {
                   ...commonProps,
                   aspectRatio: 2.0,
-                  radiusScale: 2.0,
+                  radiusScale: 0.3 * bondThickness, // Licorice is mainly bonds
               });
               break;
+          case 'line':
+              loadedComponent.addRepresentation('line', {
+                  ...commonProps,
+                  linewidth: 5 * bondThickness
+              });
+              break;
+          case 'cartoon':
+              // Cartoon requires specific residue info, typically PDBs. 
+              // For small molecules, NGL might not render anything.
+              // We add a fallback 'ball+stick' if it's likely a small molecule (xyz/mol)
+              if (ext === 'pdb') {
+                   loadedComponent.addRepresentation('cartoon', {
+                      ...commonProps,
+                      aspectRatio: 1.0 * bondThickness,
+                      radiusScale: 0.5 * atomSize
+                  });
+              } else {
+                  // Fallback for non-protein formats
+                   loadedComponent.addRepresentation('ball+stick', { 
+                      ...commonProps,
+                      aspectRatio: 1.5 * bondThickness,
+                      radiusScale: 0.5 * atomSize,
+                  });
+              }
+              break;
       }
-  }, [loadedComponent, representation]);
+  }, [loadedComponent, representation, atomSize, bondThickness, ext]);
 
 
   // Handle Spin
@@ -290,12 +320,6 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
   }, [showPositive, showNegative, activeOrbital, loading]);
 
 
-  const toggleRepresentation = () => {
-      const modes: RepresentationType[] = ['ball+stick', 'hyperball', 'spacefill', 'licorice'];
-      const nextIndex = (modes.indexOf(representation) + 1) % modes.length;
-      setRepresentation(modes[nextIndex]);
-  };
-
   return (
     <div 
         className={`relative rounded-2xl overflow-hidden border border-white/10 group transition-all duration-500 ${isPreview ? 'h-48' : 'h-[500px] hover:border-cyan-500/30 hover:shadow-[0_0_40px_rgba(6,182,212,0.15)]'}`}
@@ -317,6 +341,63 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
                 <Move3dIcon className="w-3 h-3" />
                 Interactive View
             </div>
+        </div>
+      )}
+
+      {/* Advanced Settings Panel */}
+      {showControls && !isPreview && (
+        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 bg-black/90 backdrop-blur-xl border border-white/10 rounded-xl p-4 w-64 shadow-2xl z-20 flex flex-col gap-4 animate-fade-in origin-bottom">
+            {/* Style Selector */}
+            <div>
+                <label className="text-[10px] uppercase font-bold text-slate-500 mb-1.5 block">Representation</label>
+                <div className="grid grid-cols-3 gap-1">
+                    {['ball+stick', 'hyperball', 'spacefill', 'licorice', 'line', 'cartoon'].map((style) => (
+                        <button
+                            key={style}
+                            onClick={() => setRepresentation(style as RepresentationType)}
+                            className={`text-[10px] py-1.5 rounded border transition-colors ${representation === style ? 'bg-cyan-600 border-cyan-500 text-white' : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:text-white'}`}
+                        >
+                            {style === 'ball+stick' ? 'Standard' : style.charAt(0).toUpperCase() + style.slice(1)}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Scale Sliders */}
+            <div className="space-y-3 pt-2 border-t border-white/10">
+                 <div>
+                    <div className="flex justify-between text-[10px] uppercase font-bold text-slate-500 mb-1">
+                        <span>Atom Size</span>
+                        <span className="text-cyan-400">{atomSize.toFixed(1)}x</span>
+                    </div>
+                    <input
+                        type="range"
+                        min="0.2"
+                        max="3.0"
+                        step="0.1"
+                        value={atomSize}
+                        onChange={(e) => setAtomSize(parseFloat(e.target.value))}
+                        className="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-cyan-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:hover:scale-125 [&::-webkit-slider-thumb]:transition-transform"
+                    />
+                 </div>
+                 <div>
+                    <div className="flex justify-between text-[10px] uppercase font-bold text-slate-500 mb-1">
+                        <span>Bond Width</span>
+                        <span className="text-cyan-400">{bondThickness.toFixed(1)}x</span>
+                    </div>
+                     <input
+                        type="range"
+                        min="0.1"
+                        max="3.0"
+                        step="0.1"
+                        value={bondThickness}
+                        onChange={(e) => setBondThickness(parseFloat(e.target.value))}
+                        className="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-cyan-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:hover:scale-125 [&::-webkit-slider-thumb]:transition-transform"
+                    />
+                 </div>
+            </div>
+            
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-black/90 rotate-45 border-r border-b border-white/10"></div>
         </div>
       )}
 
@@ -343,8 +424,8 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
 
             <div className="w-px h-4 bg-white/10 mx-1"></div>
 
-            <TooltipButton label={`Style: ${representation}`} onClick={toggleRepresentation}>
-                <Palette className="w-4 h-4 text-emerald-400" />
+            <TooltipButton label="Visualization Settings" onClick={() => setShowControls(!showControls)} active={showControls}>
+                <Settings2 className="w-4 h-4 text-emerald-400" />
             </TooltipButton>
             
             <TooltipButton label="Theme" onClick={() => setBgColor(bgColor === '#050505' ? '#0f172a' : '#050505')}>

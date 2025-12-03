@@ -7,6 +7,7 @@ import InputForm from './components/InputForm';
 import MoleculeViewer from './components/MoleculeViewer';
 import ResultsDashboard from './components/ResultsDashboard';
 import DocumentationPage from './components/DocumentationPage';
+import Chatbot from './components/Chatbot';
 import { Job, MoleculeData, CalculationOptions } from './types';
 import { submitJob, getJobStatus } from './services/api';
 import { Home, ChevronRight, Activity, Clock, AlertTriangle, XCircle, History, FileText } from 'lucide-react';
@@ -272,6 +273,7 @@ const App: React.FC = () => {
           <Route path="/simulator" element={<SimulatorPage />} />
           <Route path="/docs" element={<DocumentationPage />} />
         </Routes>
+        <Chatbot />
       </div>
     </HashRouter>
   );
