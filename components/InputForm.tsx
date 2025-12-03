@@ -115,8 +115,8 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => {
 
   return (
     <div className="glass-panel p-4 sm:p-6 rounded-2xl border border-white/10 relative overflow-hidden">
-      {/* Background Accent */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none -mr-32 -mt-32"></div>
+      {/* Background Accent - Violet */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/5 rounded-full blur-3xl pointer-events-none -mr-32 -mt-32"></div>
 
       <div className="flex items-center gap-3 mb-6 relative z-10">
         <div className="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/20 shadow-lg shadow-cyan-900/20 flex-shrink-0">
@@ -344,7 +344,7 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => {
                             onClick={() => setCalcType(type.id as any)}
                             className={`flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl border transition-all duration-300 relative overflow-hidden group ${
                                 active 
-                                ? 'bg-cyan-500/10 border-cyan-500/50 text-white shadow-[0_0_15px_rgba(6,182,212,0.2)]' 
+                                ? 'bg-cyan-500/10 border-cyan-500/50 text-white shadow-[0_0_15px_rgba(139,92,246,0.2)]' 
                                 : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:border-white/10 hover:text-slate-200'
                             }`}
                         >
@@ -363,7 +363,7 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => {
           className={`w-full mt-4 flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 relative overflow-hidden group ${
             isLoading 
             ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' 
-            : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-[0_4px_20px_rgba(8,145,178,0.4)] hover:shadow-[0_6px_25px_rgba(8,145,178,0.6)] border border-cyan-500/20'
+            : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-[0_4px_20px_rgba(139,92,246,0.4)] hover:shadow-[0_6px_25px_rgba(139,92,246,0.6)] border border-cyan-500/20'
           }`}
         >
           {isLoading ? (

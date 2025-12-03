@@ -40,7 +40,7 @@ const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ job }) => {
             <title>QuantaLab Report - ${job.moleculeName}</title>
             <style>
                 body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 40px; }
-                .header { border-bottom: 2px solid #7678ed; padding-bottom: 20px; margin-bottom: 30px; }
+                .header { border-bottom: 2px solid #8b5cf6; padding-bottom: 20px; margin-bottom: 30px; }
                 .header h1 { margin: 0; color: #1a1a1a; font-size: 28px; }
                 .header .meta { color: #666; font-size: 14px; margin-top: 5px; }
                 .section { margin-bottom: 30px; background: #f9fafb; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; }
@@ -48,7 +48,7 @@ const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ job }) => {
                 table { width: 100%; border-collapse: collapse; margin-top: 10px; }
                 th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
                 th { color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
-                .value { font-family: 'Courier New', monospace; font-weight: bold; color: #7678ed; }
+                .value { font-family: 'Courier New', monospace; font-weight: bold; color: #8b5cf6; }
                 .ai-analysis { background: #f0fdfa; border: 1px solid #ccfbf1; padding: 20px; border-radius: 8px; color: #115e59; white-space: pre-wrap; }
                 .structure-block { background: #111; color: #0ea5e9; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 12px; overflow-x: auto; }
                 .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 20px; }
@@ -183,7 +183,7 @@ ${results.optimizedStructure || job.structure || "Structure not available"}
       {/* Responsive Grid: 1 col on mobile, 2 on tablet, 3 on desktop */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Key Metrics Cards */}
-        <div className="glass-panel p-5 rounded-xl border border-[#7678ed]/20 shadow-[0_4px_20px_rgba(118,120,237,0.1)]">
+        <div className="glass-panel p-5 rounded-xl border border-[#8b5cf6]/20 shadow-[0_4px_20px_rgba(139,92,246,0.1)]">
           <div className="flex items-center gap-2 text-slate-400 mb-2">
             <Zap className="w-4 h-4 text-yellow-400" />
             <span className="text-xs font-medium uppercase tracking-wider">Total Energy</span>
@@ -191,7 +191,7 @@ ${results.optimizedStructure || job.structure || "Structure not available"}
           <div className="text-2xl font-bold text-white tracking-tight">{results.energy.toFixed(5)} <span className="text-sm font-normal text-slate-500">Ha</span></div>
         </div>
 
-        <div className="glass-panel p-5 rounded-xl border border-[#7678ed]/20 shadow-[0_4px_20px_rgba(118,120,237,0.1)]">
+        <div className="glass-panel p-5 rounded-xl border border-[#8b5cf6]/20 shadow-[0_4px_20px_rgba(139,92,246,0.1)]">
           <div className="flex items-center gap-2 text-slate-400 mb-2">
             <Activity className="w-4 h-4 text-emerald-400" />
             <span className="text-xs font-medium uppercase tracking-wider">HOMO-LUMO Gap</span>
@@ -202,11 +202,11 @@ ${results.optimizedStructure || job.structure || "Structure not available"}
           </div>
         </div>
 
-        <div className="glass-panel p-5 rounded-xl sm:col-span-2 lg:col-span-1 border border-[#7678ed]/20 shadow-[0_4px_20px_rgba(118,120,237,0.1)]">
+        <div className="glass-panel p-5 rounded-xl sm:col-span-2 lg:col-span-1 border border-[#8b5cf6]/20 shadow-[0_4px_20px_rgba(139,92,246,0.1)]">
           <div className="flex items-center gap-2 text-slate-400 mb-2">
             <span className="text-xs font-medium uppercase tracking-wider">Dipole Moment</span>
           </div>
-          <div className="text-2xl font-bold text-[#7678ed] tracking-tight">
+          <div className="text-2xl font-bold text-[#8b5cf6] tracking-tight">
              {Math.sqrt(results.dipoleMoment.reduce((a,b) => a + b*b, 0)).toFixed(3)}
              <span className="text-sm font-normal text-slate-500"> D</span>
           </div>
@@ -232,7 +232,7 @@ ${results.optimizedStructure || job.structure || "Structure not available"}
                             <XAxis dataKey="name" stroke="#64748b" tick={{fill: '#94a3b8'}} tickLine={{stroke: '#334155'}} axisLine={{stroke: '#334155'}} />
                             <YAxis stroke="#64748b" tick={{fill: '#94a3b8'}} tickLine={{stroke: '#334155'}} axisLine={{stroke: '#334155'}} label={{ value: 'Energy (Ha)', angle: -90, position: 'insideLeft', fill: '#64748b', offset: 10 }} />
                             <Tooltip 
-                                contentStyle={{ backgroundColor: 'rgba(5,5,5,0.9)', backdropFilter: 'blur(8px)', border: '1px solid rgba(118,120,237,0.3)', borderRadius: '8px', color: '#fff' }}
+                                contentStyle={{ backgroundColor: 'rgba(5,5,5,0.9)', backdropFilter: 'blur(8px)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '8px', color: '#fff' }}
                                 itemStyle={{ color: '#fff' }}
                                 cursor={{fill: 'rgba(255,255,255,0.05)'}}
                                 formatter={(value: number) => [value.toFixed(4) + ' Ha', 'Energy']}
@@ -240,7 +240,7 @@ ${results.optimizedStructure || job.structure || "Structure not available"}
                             <ReferenceLine y={0} stroke="#475569" strokeDasharray="3 3" />
                             <Bar dataKey="energy">
                                 {orbitalData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.name === 'HOMO' ? '#7678ed' : '#f43f5e'} />
+                                    <Cell key={`cell-${index}`} fill={entry.name === 'HOMO' ? '#8b5cf6' : '#f43f5e'} />
                                 ))}
                             </Bar>
                         </BarChart>
@@ -271,9 +271,9 @@ ${results.optimizedStructure || job.structure || "Structure not available"}
                         )}
                      </div>
 
-                     <div className="p-3 bg-white/5 rounded-lg border border-white/5 hover:border-[#7678ed]/30 transition-colors">
+                     <div className="p-3 bg-white/5 rounded-lg border border-white/5 hover:border-[#8b5cf6]/30 transition-colors">
                         <div className="text-xs font-bold text-slate-500 uppercase mb-1">HOMO</div>
-                        <div className="text-lg font-bold text-[#7678ed]">{results.homoEnergy.toFixed(4)} Ha</div>
+                        <div className="text-lg font-bold text-[#8b5cf6]">{results.homoEnergy.toFixed(4)} Ha</div>
                         <div className="text-xs text-slate-400">{toEV(results.homoEnergy)} eV</div>
 
                         {results.homoCubeUrl && (
@@ -329,7 +329,7 @@ ${results.optimizedStructure || job.structure || "Structure not available"}
         <div className="flex items-center gap-3">
             <button 
                 onClick={() => setShowExportMenu(!showExportMenu)} 
-                className="flex items-center gap-2 px-6 py-3 bg-[#7678ed] hover:bg-[#6567e5] text-white rounded-xl transition-all shadow-[0_4px_14px_rgba(118,120,237,0.3)] hover:shadow-[0_6px_20px_rgba(118,120,237,0.5)] text-sm font-bold tracking-wide group"
+                className="flex items-center gap-2 px-6 py-3 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white rounded-xl transition-all shadow-[0_4px_14px_rgba(139,92,246,0.3)] hover:shadow-[0_6px_20px_rgba(139,92,246,0.5)] text-sm font-bold tracking-wide group"
             >
                 <FileText className="w-4 h-4" />
                 Export Results

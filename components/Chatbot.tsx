@@ -190,7 +190,7 @@ const Chatbot: React.FC = () => {
       {/* Floating Toggle Button */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={`pointer-events-auto group relative flex items-center justify-center w-14 h-14 rounded-full shadow-[0_4px_30px_rgba(6,182,212,0.4)] transition-all duration-300 hover:scale-110 active:scale-95 z-50 ${
+        className={`pointer-events-auto group relative flex items-center justify-center w-14 h-14 rounded-full shadow-[0_4px_30px_rgba(139,92,246,0.4)] transition-all duration-300 hover:scale-110 active:scale-95 z-50 ${
             isOpen 
             ? 'bg-[#1a1a1a] text-slate-300 border border-white/10 rotate-90 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30' 
             : 'bg-gradient-to-br from-cyan-500 to-blue-600 text-white'

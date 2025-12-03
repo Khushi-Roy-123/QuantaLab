@@ -46,13 +46,13 @@ const LandingPage: React.FC = () => {
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-transparent via-black/40 to-black/90 z-10" />
         </div>
         
-        {/* Abstract Floating Elements */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-600/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen animate-pulse duration-[5000ms]"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen animate-pulse duration-[7000ms]"></div>
+        {/* Abstract Floating Elements - Updated Colors */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen animate-pulse duration-[5000ms]"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-fuchsia-600/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen animate-pulse duration-[7000ms]"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 text-center flex flex-col items-center justify-center h-full pt-16">
           
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-950/30 border border-cyan-500/30 text-cyan-300 text-xs font-bold uppercase tracking-wider mb-8 backdrop-blur-md shadow-[0_0_20px_rgba(6,182,212,0.15)] hover:bg-cyan-900/40 transition-colors cursor-default select-none animate-fade-in-up">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-950/30 border border-cyan-500/30 text-cyan-300 text-xs font-bold uppercase tracking-wider mb-8 backdrop-blur-md shadow-[0_0_20px_rgba(139,92,246,0.15)] hover:bg-cyan-900/40 transition-colors cursor-default select-none animate-fade-in-up">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
@@ -72,7 +72,7 @@ const LandingPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-5 w-full max-w-md sm:max-w-none animate-fade-in-up delay-300">
             <Link 
               to="/simulator" 
-              className="w-full sm:w-auto px-8 py-5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold shadow-[0_0_30px_rgba(8,145,178,0.4)] hover:shadow-[0_0_50px_rgba(8,145,178,0.6)] hover:scale-105 transition-all flex items-center justify-center gap-3 group text-lg"
+              className="w-full sm:w-auto px-8 py-5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold shadow-[0_0_30px_rgba(139,92,246,0.4)] hover:shadow-[0_0_50px_rgba(139,92,246,0.6)] hover:scale-105 transition-all flex items-center justify-center gap-3 group text-lg"
             >
               Launch Simulator
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

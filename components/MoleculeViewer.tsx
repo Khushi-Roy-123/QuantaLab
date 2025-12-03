@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Maximize, RotateCw, RefreshCw, Camera, Layers, Disc, Palette, Plus, Minus, Eye, EyeOff, Settings2 } from 'lucide-react';
+import { Maximize, RotateCw, Camera, Disc, Palette, Plus, Minus, Settings2 } from 'lucide-react';
 
 // Declare NGL globally as it is loaded via script tag
 declare const NGL: any;
@@ -105,33 +105,25 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
     setLoading(true);
 
     const cleanStructure = structure.trim();
-    // Use File object to ensure NGL auto-detection works based on filename
-    const fileExt = ext ? ext.toLowerCase().trim() : 'xyz';
-    const fileName = `molecule.${fileExt}`;
+    
+    // Sanitize extension: remove leading dot if present and trim whitespace
+    const rawExt = ext ? ext.toLowerCase().trim() : 'xyz';
+    const fileExt = rawExt.replace(/^\./, '');
 
-    try {
-        const file = new File([cleanStructure], fileName, { type: 'text/plain' });
-        
-        // Load the file
-        stage.loadFile(file, { defaultRepresentation: false }).then((component: any) => {
+    // Use Blob with explicit ext parameter in params
+    const blob = new Blob([cleanStructure], { type: 'text/plain' });
+    const params = { ext: fileExt, defaultRepresentation: false };
+
+    stage.loadFile(blob, params)
+        .then((component: any) => {
             setLoadedComponent(component);
             component.autoView();
             setLoading(false);
-        }).catch((err: any) => {
+        })
+        .catch((err: any) => {
             console.error("NGL Load Error:", err);
             setLoading(false);
         });
-
-    } catch (e) {
-        console.error("File API Error:", e);
-        // Fallback for environments without File API (unlikely in modern browsers)
-        const blob = new Blob([cleanStructure], { type: 'text/plain' });
-        stage.loadFile(blob, { ext: fileExt, defaultRepresentation: false }).then((component: any) => {
-            setLoadedComponent(component);
-            component.autoView();
-            setLoading(false);
-        });
-    }
 
   }, [structure, ext]);
 
@@ -244,8 +236,11 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
           center.z + dipoleMoment[2] * scaleFactor
       ];
 
-      shape.addArrow([center.x, center.y, center.z], end, [0, 1, 1], 0.2, "Dipole");
-      shape.addText(end, [0, 1, 1], 1.5, ` ${magnitude.toFixed(2)} D`);
+      // Theme Color #8b5cf6 is [0.55, 0.36, 0.96] (Violet 500)
+      const arrowColor = [0.55, 0.36, 0.96]; 
+
+      shape.addArrow([center.x, center.y, center.z], end, arrowColor, 0.2, "Dipole");
+      shape.addText(end, arrowColor, 1.5, ` ${magnitude.toFixed(2)} D`);
 
       shapeCompRef.current = stageRef.current.addComponentFromObject(shape);
       shapeCompRef.current.addRepresentation('buffer');
@@ -322,14 +317,14 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
 
   return (
     <div 
-        className={`relative rounded-2xl overflow-hidden border border-white/10 group transition-all duration-500 ${isPreview ? 'h-48' : 'h-[500px] hover:border-cyan-500/30 hover:shadow-[0_0_40px_rgba(6,182,212,0.15)]'}`}
+        className={`relative rounded-2xl overflow-hidden border border-white/10 group transition-all duration-500 ${isPreview ? 'h-48' : 'h-[500px] hover:border-[#8b5cf6]/30 hover:shadow-[0_0_40px_rgba(139,92,246,0.15)]'}`}
         ref={containerRef}
     >
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-20">
           <div className="flex flex-col items-center gap-3">
-             <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-             <span className="text-xs font-bold text-cyan-400 tracking-wider">RENDERING</span>
+             <div className="w-8 h-8 border-4 border-[#8b5cf6] border-t-transparent rounded-full animate-spin"></div>
+             <span className="text-xs font-bold text-[#8b5cf6] tracking-wider">RENDERING</span>
           </div>
         </div>
       )}
@@ -337,7 +332,7 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
       {/* Interactive Badge */}
       {!isPreview && (
         <div className="absolute top-4 left-4 z-10 flex gap-2">
-            <div className="px-2 py-1 bg-black/60 backdrop-blur-md border border-white/10 rounded text-[10px] font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="px-2 py-1 bg-black/60 backdrop-blur-md border border-white/10 rounded text-[10px] font-bold text-[#8b5cf6] uppercase tracking-wider flex items-center gap-1.5">
                 <Move3dIcon className="w-3 h-3" />
                 Interactive View
             </div>
@@ -355,7 +350,7 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
                         <button
                             key={style}
                             onClick={() => setRepresentation(style as RepresentationType)}
-                            className={`text-[10px] py-1.5 rounded border transition-colors ${representation === style ? 'bg-cyan-600 border-cyan-500 text-white' : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:text-white'}`}
+                            className={`text-[10px] py-1.5 rounded border transition-colors ${representation === style ? 'bg-[#8b5cf6] border-[#8b5cf6] text-white' : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:text-white'}`}
                         >
                             {style === 'ball+stick' ? 'Standard' : style.charAt(0).toUpperCase() + style.slice(1)}
                         </button>
@@ -368,7 +363,7 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
                  <div>
                     <div className="flex justify-between text-[10px] uppercase font-bold text-slate-500 mb-1">
                         <span>Atom Size</span>
-                        <span className="text-cyan-400">{atomSize.toFixed(1)}x</span>
+                        <span className="text-[#8b5cf6]">{atomSize.toFixed(1)}x</span>
                     </div>
                     <input
                         type="range"
@@ -377,13 +372,13 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
                         step="0.1"
                         value={atomSize}
                         onChange={(e) => setAtomSize(parseFloat(e.target.value))}
-                        className="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-cyan-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:hover:scale-125 [&::-webkit-slider-thumb]:transition-transform"
+                        className="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-[#8b5cf6] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:hover:scale-125 [&::-webkit-slider-thumb]:transition-transform"
                     />
                  </div>
                  <div>
                     <div className="flex justify-between text-[10px] uppercase font-bold text-slate-500 mb-1">
                         <span>Bond Width</span>
-                        <span className="text-cyan-400">{bondThickness.toFixed(1)}x</span>
+                        <span className="text-[#8b5cf6]">{bondThickness.toFixed(1)}x</span>
                     </div>
                      <input
                         type="range"
@@ -392,7 +387,7 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
                         step="0.1"
                         value={bondThickness}
                         onChange={(e) => setBondThickness(parseFloat(e.target.value))}
-                        className="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-cyan-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:hover:scale-125 [&::-webkit-slider-thumb]:transition-transform"
+                        className="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-[#8b5cf6] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:hover:scale-125 [&::-webkit-slider-thumb]:transition-transform"
                     />
                  </div>
             </div>
@@ -438,7 +433,7 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ structure, ext, dipoleM
                     <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5 border border-white/5">
                         <button 
                             onClick={() => setActiveOrbital(activeOrbital === 'homo' ? 'none' : 'homo')}
-                            className={`px-2 py-1 rounded text-[10px] font-bold transition-colors ${activeOrbital === 'homo' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                            className={`px-2 py-1 rounded text-[10px] font-bold transition-colors ${activeOrbital === 'homo' ? 'bg-[#8b5cf6] text-white' : 'text-slate-400 hover:text-white'}`}
                         >
                             HOMO
                         </button>
@@ -473,7 +468,7 @@ const TooltipButton = ({ children, onClick, active, label }: any) => (
     <button
         onClick={onClick}
         title={label}
-        className={`p-2 rounded-lg transition-all ${active ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
+        className={`p-2 rounded-lg transition-all ${active ? 'bg-[#8b5cf6]/20 text-[#8b5cf6]' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
     >
         {children}
     </button>
